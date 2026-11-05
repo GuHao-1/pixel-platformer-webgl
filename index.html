@@ -7,11 +7,12 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <style>
-      /* 【新增】清除默认边距，隐藏滚动条，让画布铺满全屏 */
+      /* 【核心适配】清除边距，隐藏滚动条，禁止手机触摸滑动，让画布铺满全屏 */
       html, body {
         padding: 0;
         margin: 0;
         overflow: hidden;
+        touch-action: none; /* 禁止手机浏览器的触摸滑动和双击缩放 */
         width: 100%;
         height: 100%;
         background: #231F20;
@@ -90,8 +91,6 @@
         document.getElementsByTagName('head')[0].appendChild(meta);
         container.className = "unity-mobile";
         canvas.className = "unity-mobile";
-      } else {
-        // 【修改】删掉了原来写死的 1920px 和 1080px，让它自动适应
       }
 
       loadingBar.style.display = "block";
