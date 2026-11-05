@@ -71,12 +71,13 @@
         updateBannerVisibility();
       }
 
+      // 【极其重要】这里的文件名必须和你刚才上传的 Build 文件夹里的文件名完全一致！
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/WebGL_Build.loader.js";
+      var loaderUrl = buildUrl + "/WebGL_Build2_0.loader.js";
       var config = {
-        dataUrl: buildUrl + "/WebGL_Build.data.unityweb",
-        frameworkUrl: buildUrl + "/WebGL_Build.framework.js.unityweb",
-        codeUrl: buildUrl + "/WebGL_Build.wasm.unityweb",
+        dataUrl: buildUrl + "/WebGL_Build2_0.data.unityweb",
+        frameworkUrl: buildUrl + "/WebGL_Build2_0.framework.js.unityweb",
+        codeUrl: buildUrl + "/WebGL_Build2_0.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Plat former Game",
