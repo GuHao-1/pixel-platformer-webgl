@@ -7,12 +7,11 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <style>
-      /* 强制覆盖 Unity 默认的样式 */
       html, body {
         padding: 0 !important;
         margin: 0 !important;
         overflow: hidden !important;
-        background-color: #000 !important; /* 黑边颜色 */
+        background-color: #000 !important;
         width: 100%;
         height: 100%;
         touch-action: none;
@@ -25,25 +24,60 @@
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
         width: 100vw !important;
-        height: 56.25vw !important; /* 100 / (16/9) = 56.25 */
+        height: 56.25vw !important; 
         max-height: 100vh !important;
-        max-width: 177.78vh !important; /* 100 / (9/16) = 177.78 */
+        max-width: 177.78vh !important; 
       }
       
-      /* 画布填满容器 */
       #unity-canvas {
         width: 100% !important;
         height: 100% !important;
         background: #231F20;
       }
       
-      /* 隐藏底部的 logo 栏，防止占用手机屏幕空间 */
       #unity-footer {
         display: none !important; 
+      }
+
+      /* 【核心新增】全屏状态下的旋转引导遮罩 */
+      #rotate-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: #1a1a1a;
+        color: white;
+        z-index: 10000;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: sans-serif;
+        text-align: center;
+      }
+      #rotate-overlay .phone-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+        animation: rotate-phone 2s infinite ease-in-out;
+      }
+      @keyframes rotate-phone {
+        0% { transform: rotate(0deg); }
+        50% { transform: rotate(90deg); }
+        100% { transform: rotate(90deg); }
+      }
+
+      /* 当全屏且处于竖屏时，显示遮罩 */
+      #rotate-overlay.show {
+        display: flex !important;
       }
     </style>
   </head>
   <body>
+    <!-- 旋转引导遮罩 -->
+    <div id="rotate-overlay">
+      <div class="phone-icon">📱</div>
+      <h2 style="margin:0; font-size: 24px;">请旋转手机</h2>
+      <p style="margin-top: 10px; color: #aaa;">横屏体验更佳</p>
+    </div>
+
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1"></canvas>
       <div id="unity-loading-bar">
@@ -53,25 +87,18 @@
         </div>
       </div>
       <div id="unity-warning"> </div>
-      <!-- 全屏按钮移到了外部，或者用悬浮按钮 -->
-      <div id="unity-footer" style="display: none !important;">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Plat former Game</div>
-      </div>
     </div>
 
-    <!-- 自定义悬浮全屏按钮 (只在全屏后可见) -->
-    <button id="custom-fullscreen-btn" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 10px; background: rgba(255,255,255,0.5); border: none; border-radius: 5px; display: none;">全屏</button>
+    <button id="custom-fullscreen-btn" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; padding: 8px 16px; background: rgba(255,255,255,0.7); border: none; border-radius: 5px; font-weight: bold; display: none;">全屏</button>
 
     <script>
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
       var loadingBar = document.querySelector("#unity-loading-bar");
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
       var customBtn = document.querySelector("#custom-fullscreen-btn");
+      var rotateOverlay = document.querySelector("#rotate-overlay");
 
       function unityShowBanner(msg, type) {
         function updateBannerVisibility() {
@@ -81,8 +108,8 @@
         div.innerHTML = msg;
         warningBanner.appendChild(div);
         if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+        else if (type == 'warning') {
+          div.style = 'background: yellow; padding: 10px;';
           setTimeout(function() {
             warningBanner.removeChild(div);
             updateBannerVisibility();
@@ -111,7 +138,7 @@
         document.getElementsByTagName('head')[0].appendChild(meta);
         container.className = "unity-mobile";
         canvas.className = "unity-mobile";
-        customBtn.style.display = "block"; // 手机端显示自定义全屏按钮
+        customBtn.style.display = "block";
       }
 
       loadingBar.style.display = "block";
@@ -124,6 +151,36 @@
         }).then((unityInstance) => {
           loadingBar.style.display = "none";
           
+          // 监听全屏变化
+          document.addEventListener('fullscreenchange', handleFullscreenChange);
+          document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+          function handleFullscreenChange() {
+            var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+            if (isFullscreen) {
+              customBtn.style.display = "none"; // 隐藏自定义按钮
+              checkOrientation();
+            } else {
+              customBtn.style.display = "block"; // 退出全屏时显示
+              rotateOverlay.classList.remove("show"); // 退出全屏时隐藏遮罩
+            }
+          }
+
+          // 检查当前是否是竖屏
+          function checkOrientation() {
+            if (window.innerHeight > window.innerWidth) {
+              rotateOverlay.classList.add("show"); // 竖屏时显示遮罩
+            } else {
+              rotateOverlay.classList.remove("show"); // 横屏时隐藏遮罩
+            }
+          }
+
+          // 监听屏幕旋转
+          window.addEventListener("resize", checkOrientation);
+          window.addEventListener("orientationchange", () => {
+            setTimeout(checkOrientation, 100); // 延迟一点等待浏览器更新宽高
+          });
+
           // 绑定全屏逻辑
           var toggleFullscreen = () => {
             unityInstance.SetFullscreen(1).then(() => {
@@ -133,9 +190,7 @@
             });
           };
 
-          fullscreenButton.onclick = toggleFullscreen;
           customBtn.onclick = toggleFullscreen;
-          
         }).catch((message) => {
           alert(message);
         });
